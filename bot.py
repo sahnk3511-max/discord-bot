@@ -1,9 +1,12 @@
 import discord
 from discord.ext import commands
+from discord import app_commands
 import os
 from dotenv import load_dotenv
 import json
 from datetime import datetime, timedelta
+import requests
+from io import BytesIO
 
 # تحميل المتغيرات من .env
 load_dotenv()
@@ -41,6 +44,12 @@ async def on_ready():
     load_data()
     # تعيين حالة البوت - Streaming مع حالة Do Not Disturb (أحمر)
     await bot.change_presence(status=discord.Status.do_not_disturb, activity=discord.Streaming(name="SAM", url="https://www.twitch.tv/"))
+    # مزامنة الأوامر الشرطية
+    try:
+        synced = await bot.tree.sync()
+        print(f"تم مزامنة {len(synced)} أمر شرطي ✅")
+    except Exception as e:
+        print(f"خطأ في المزامنة: {e}")
 
 # حدث عند إرسال رسالة
 @bot.event
@@ -228,6 +237,47 @@ async def xp(ctx):
     embed.description = leaderboard_text
     
     await ctx.send(embed=embed)
+
+# Slash Command - botprofile
+@bot.tree.command(name="botprofile", description="تغيير صورة وبنر البوت")
+@app_commands.describe(
+    avatar="رابط صورة البوت الجديدة",
+    banner="رابط بنر البوت الجديد"
+)
+@app_commands.checks.has_permissions(administrator=True)
+async def botprofile(interaction: discord.Interaction, avatar: str = None, banner: str = None):
+    """تغيير صورة وبنر البوت"""
+    
+    await interaction.response.defer()
+    
+    try:
+        if avatar:
+            # تحميل الصورة من الرابط
+            response = requests.get(avatar)
+            if response.status_code == 200:
+                avatar_bytes = BytesIO(response.content)
+                await bot.user.edit(avatar=avatar_bytes.read())
+                await interaction.followup.send("✅ تم تحديث صورة البوت بنجاح!")
+            else:
+                await interaction.followup.send("❌ لم أستطع تحميل الصورة! تأكد من الرابط.")
+                return
+        
+        if banner:
+            # تحميل البنر من الرابط
+            response = requests.get(banner)
+            if response.status_code == 200:
+                banner_bytes = BytesIO(response.content)
+                await bot.user.edit(banner=banner_bytes.read())
+                await interaction.followup.send("✅ تم تحديث بنر البوت بنجاح!")
+            else:
+                await interaction.followup.send("❌ لم أستطع تحميل البنر! تأكد من الرابط.")
+                return
+        
+        if not avatar and not banner:
+            await interaction.followup.send("⚠️ يجب أن تقدم رابط صورة أو بنر على الأقل!")
+    
+    except Exception as e:
+        await interaction.followup.send(f"❌ حدث خطأ: {str(e)}")
 
 # تشغيل البوت
 import asyncio
