@@ -190,19 +190,22 @@ async def xp(ctx):
     # إنشاء Embed
     embed = discord.Embed(
         title=f"🏆 ترتيب XP - {role.name}",
-        description=f"الأسبوع الحالي - {week_number}",
+        description=f"الأسبوع الحالي - {week_number}\n" + "="*30,
         color=role.color if role.color != discord.Color.default() else discord.Color.gold()
     )
     
     if not leaderboard:
         embed.description = "لا يوجد بيانات XP حالياً!"
     else:
+        leaderboard_text = ""
         for idx, entry in enumerate(leaderboard[:10], 1):
-            embed.add_field(
-                name=f"#{idx} - {entry['user'].name}",
-                value=f"💎 XP: {entry['xp']} | 💬 الرسائل: {entry['messages']}",
-                inline=False
-            )
+            leaderboard_text += f"🔹 | **{entry['user'].name}** - خبرة: `{entry['xp']}`\n"
+        
+        embed.add_field(
+            name="━━━━━━━━━━━━━━━━━━━━━━",
+            value=leaderboard_text,
+            inline=False
+        )
     
     await ctx.send(embed=embed)
 
