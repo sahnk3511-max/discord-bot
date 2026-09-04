@@ -7,8 +7,10 @@ from dotenv import load_dotenv
 load_dotenv()
 token = os.getenv('DISCORD_TOKEN')
 
-# إنشاء البوت
-bot = commands.Bot(command_prefix='!')
+# إنشاء البوت مع intents
+intents = discord.Intents.default()
+intents.message_content = True
+bot = commands.Bot(command_prefix='!', intents=intents)
 
 # حدث الاتصال
 @bot.event
