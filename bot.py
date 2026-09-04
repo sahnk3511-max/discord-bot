@@ -79,6 +79,10 @@ async def on_message(message):
 def get_week_number():
     return datetime.now().isocalendar()[1]
 
+# دالة لحساب المستوى من XP
+def calculate_level(xp):
+    return xp // 5
+
 # أمر hello
 @bot.command()
 async def hello(ctx):
@@ -142,7 +146,7 @@ async def setup(ctx):
         # الرد بـ ✅
         await ctx.send(f"✅ تم حفظ الرتبة: {role.mention}")
         
-    except asyncio.TimeoutError:
+    except:
         await ctx.send("انتهت المهلة الزمنية! ⏱️")
 
 # أمر xp
@@ -168,7 +172,7 @@ async def xp(ctx):
     
     for user_id_str in xp_data.keys():
         user_id_parts = user_id_str.split('_')
-        if len(user_id_parts) >= 2:
+        if len(user_id_parts) >= 3:
             user_id = int(user_id_parts[0])
             data_guild_id = user_id_parts[1]
             data_week = int(user_id_parts[2])
@@ -178,8 +182,7 @@ async def xp(ctx):
                     user = await bot.fetch_user(user_id)
                     leaderboard.append({
                         'user': user,
-                        'xp': xp_data[user_id_str]['xp'],
-                        'messages': xp_data[user_id_str]['messages']
+                        'xp': xp_data[user_id_str]['xp']
                     })
                 except:
                     pass
@@ -189,23 +192,40 @@ async def xp(ctx):
     
     # إنشاء Embed
     embed = discord.Embed(
-        title=f"🏆 ترتيب XP - {role.name}",
-        description=f"الأسبوع الحالي - {week_number}\n" + "="*30,
         color=role.color if role.color != discord.Color.default() else discord.Color.gold()
     )
     
     if not leaderboard:
         embed.description = "لا يوجد بيانات XP حالياً!"
-    else:
-        leaderboard_text = ""
-        for idx, entry in enumerate(leaderboard[:10], 1):
-            leaderboard_text += f"🔹 | **{entry['user'].name}** - خبرة: `{entry['xp']}`\n"
+        await ctx.send(embed=embed)
+        return
+    
+    # بناء الـ leaderboard
+    leaderboard_text = "## <:voice:1311747451778105415> أفضل نقاط الكتابة\n"
+    
+    for idx, entry in enumerate(leaderboard[:5], 1):
+        level = calculate_level(entry['xp'])
+        emoji = "🔹" if idx == 1 else "🔸"
+        bold = "**" if idx == 1 else ""
         
-        embed.add_field(
-            name="━━━━━━━━━━━━━━━━━━━━━━",
-            value=leaderboard_text,
-            inline=False
-        )
+        if idx == 1:
+            leaderboard_text += f"{emoji} {bold}| #{idx}{bold} <@!{entry['user'].id}> - خبرة: **{entry['xp']}** `|` مستوى: **{level}**\n"
+        else:
+            leaderboard_text += f"{emoji} | #{idx} <@!{entry['user'].id}> - خبرة: **{entry['xp']}** `|` مستوى: **{level}**\n"
+    
+    # إضافة آخر شخص في الترتيب
+    if len(leaderboard) > 5:
+        last_entry = leaderboard[-1]
+        last_level = calculate_level(last_entry['xp'])
+        leaderboard_text += f"🔹 **| #{len(leaderboard)}** <@!{last_entry['user'].id}> - خبرة: **{last_entry['xp']}** `|` مستوى: **{last_level}**\n"
+    
+    # إضافة ملاحظة التصفير
+    next_monday = datetime.now() + timedelta(days=(7 - datetime.now().weekday()))
+    next_monday_timestamp = int(next_monday.timestamp())
+    
+    leaderboard_text += f"\n-# يتم تصفير التوب الأسبوعي كل يوم الاثنين. سيتم التصفير خلال <t:{next_monday_timestamp}:R>"
+    
+    embed.description = leaderboard_text
     
     await ctx.send(embed=embed)
 
