@@ -16,8 +16,8 @@ bot = commands.Bot(command_prefix='!', intents=intents)
 @bot.event
 async def on_ready():
     print(f'{bot.user} متصل الآن! ✅')
-    # تعيين حالة البوت
-    await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name="SAM"))
+    # تعيين حالة البوت - Streaming
+    await bot.change_presence(activity=discord.Streaming(name="SAM", url="https://www.twitch.tv/"))
 
 # أمر hello
 @bot.command()
